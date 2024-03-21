@@ -1,0 +1,1246 @@
+{
+	"info": {
+		"_postman_id": "c42995e4-4da7-4d44-afe7-fad2c9bbc5a7",
+		"name": "QA engineer test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33625484"
+	},
+	"item": [
+		{
+			"name": "Population per Year",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let jsonData;\r",
+							"pm.test(\"The response is in JSON format\", function() {\r",
+							"    try {\r",
+							"        jsonData = pm.response.json(); // Attempt to parse JSON\r",
+							"        pm.expect(jsonData).to.be.an('object');\r",
+							"    } catch (e) {\r",
+							"        pm.expect.fail(\"Response is not in JSON format\");\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"pm.test(\"The response contains the correct property and it is an array\", function () {\r",
+							"    \r",
+							"    const actualPropertyName = 'actualPropertyName'; // Replace with the actual property name from the JSON response\r",
+							"    pm.expect(jsonData, `The JSON response must have the '${actualPropertyName}' property which is an array`)\r",
+							"      .to.have.property(actualPropertyName).that.is.an('array');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Validation for each item in the array\", function () {\r",
+							"    const actualPropertyName = 'actualPropertyName'; // Replace with the actual property name from the JSON response\r",
+							"    if (jsonData && jsonData[actualPropertyName]) {\r",
+							"        jsonData[actualPropertyName].forEach(function(item, index) {\r",
+							"\r",
+							"            const expectedKeys = ['key1', 'key2', 'key3']; // Replace these with the actual keys from the items in the array\r",
+							"            pm.expect(item, `structure for item at index ${index}`).to.have.all.keys(expectedKeys);\r",
+							"        });\r",
+							"    } else {\r",
+							"        pm.expect.fail(`${actualPropertyName} is not defined or not an array`);\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/data?drilldowns=Nation&measures=Population",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"data"
+					],
+					"query": [
+						{
+							"key": "drilldowns",
+							"value": "Nation"
+						},
+						{
+							"key": "measures",
+							"value": "Population"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Population by State",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"\r",
+							"let jsonData = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Status code is 200 and response is in JSON format\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"The population number is consistent\", function () {\r",
+							"    jsonData.data.forEach(function (item) {\r",
+							"        pm.expect(item.Population).to.be.a('number');\r",
+							"        pm.expect(item.Population).to.be.above(0);\r",
+							"    });\r",
+							"});\r",
+							"\r",
+							"pm.test(\"The structure of the answer is valid\", function () {\r",
+							"    jsonData.data.forEach(function (item) {\r",
+							"        pm.expect(item).to.have.property('State');\r",
+							"        pm.expect(item).to.have.property('ID State');\r",
+							"    });\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Each 'State' has a unique 'State ID' consistently assigned\", function () {\r",
+							"    let stateIdMap = new Map();\r",
+							"\r",
+							"    jsonData.data.forEach(function(item) {\r",
+							"        if (stateIdMap.has(item.State)) {\r",
+							"            pm.expect(stateIdMap.get(item.State)).to.eql(item[\"ID State\"], \"The ID State is not consistent for the state:\" + item.State);\r",
+							"        } else {\r",
+							"            stateIdMap.set(item.State, item[\"ID State\"]);\r",
+							"        }\r",
+							"    });\r",
+							"\r",
+							"    pm.expect(stateIdMap.size).to.be.above(0, \"There must be at least one state in the response.\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Check 'Population' by 'State' and by year\", function () {\r",
+							"    let stateYearMap = {}; // Almacenar combinaciones únicas de State y Year con su Population\r",
+							"\r",
+							"    jsonData.data.forEach(item => {\r",
+							"        let stateYearKey = `${item.State}-${item.Year}`;\r",
+							"        if (!stateYearMap[stateYearKey]) {\r",
+							"            stateYearMap[stateYearKey] = item.Population;\r",
+							"        }\r",
+							"    });\r",
+							"\r",
+							"    for (let stateYearKey in stateYearMap) {\r",
+							"        pm.expect(stateYearMap[stateYearKey]).to.be.a('number', `The population must be a number to ${stateYearKey}`);\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Estado con la menor 'Population'\", function () {\r",
+							"    let sortedByPopulation = [...jsonData.data].sort((a, b) => a.Population - b.Population);\r",
+							"    let stateWithLowestPopulation = sortedByPopulation[0];\r",
+							"    console.log(\" The state with the smallest population is\" + stateWithLowestPopulation.State + \" con \" + stateWithLowestPopulation.Population + \" personas.\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"State with the highest 'Population'\", function () {\r",
+							"    let sortedByPopulation = [...jsonData.data].sort((a, b) => b.Population - a.Population);\r",
+							"    let stateWithHighestPopulation = sortedByPopulation[0];\r",
+							"    console.log(\"The state with the largest population is \" + stateWithHighestPopulation.State + \" con \" + stateWithHighestPopulation.Population + \" people.\");\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/data?drilldowns=State&measures=Population",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"data"
+					],
+					"query": [
+						{
+							"key": "drilldowns",
+							"value": "State"
+						},
+						{
+							"key": "measures",
+							"value": "Population"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "university",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"El código de estado es 200 y el tiempo de respuesta es menor a 5 segundos\", function () {\r",
+							"    pm.expect(pm.response.code, \"El código de estado debe ser 200\").to.equal(200);\r",
+							"    pm.expect(pm.response.responseTime, \"El tiempo de respuesta debe ser menor a 5 segundos\").to.be.below(5000);\r",
+							"\r",
+							"    try {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.test(\"La respuesta es JSON\", function() {\r",
+							"        pm.expect(jsonData).to.be.an('object');\r",
+							"    });\r",
+							"} catch (e) {\r",
+							"    // Si la respuesta no es JSON, podría ser XML\r",
+							"    pm.test(\"La respuesta podría ser XML\", function() {\r",
+							"        var responseBody = pm.response.text();\r",
+							"        pm.expect(responseBody).to.include(\"<?xml\");\r",
+							"    });\r",
+							"}\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Verificar que el parámetro 'limit' no sea menor a 0\", function () {\r",
+							"    // Get the request parameters as an object\r",
+							"    const params = pm.request.url.query.toObject();\r",
+							"\r",
+							"    // Convert the 'limit' parameter to a number\r",
+							"    const limit = parseInt(params.limit, 10);\r",
+							"\r",
+							"    // Check if 'limit' is not a number or if it's less than 0\r",
+							"    pm.expect(limit, \"El parámetro 'limit' debe ser un número mayor o igual a 0\").to.be.a('number');\r",
+							"    pm.expect(limit, \"El parámetro 'limit' no debe ser menor a 0\").to.be.at.least(0);\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "authority",
+						"value": "api.datausa.io"
+					},
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "es-PA,es;q=0.9,en-PA;q=0.8,en;q=0.7,es-419;q=0.6"
+					},
+					{
+						"key": "cookie",
+						"value": "_ga=GA1.2.791936088.1710479639; _gid=GA1.2.1643345646.1710479639; _hjSession_1257570=eyJpZCI6IjUwMGVhNGZmLTFhZWYtNDkzYS1iZDZjLTA0MzVhNGUzOWVhNyIsImMiOjE3MTA0Nzk2Mzg3NjIsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjoxLCJzcCI6MH0=; _hjSessionUser_1257570=eyJpZCI6ImU1NjI1NzZjLWUxZTYtNTI5Mi05ZWFkLTg5Y2M0N2RmMjdmMyIsImNyZWF0ZWQiOjE3MTA0Nzk2Mzg3NjIsImV4aXN0aW5nIjp0cnVlfQ==; _gat_tracker1=1; _ga_9X03EHGTVS=GS1.2.1710479638.1.1.1710481240.0.0.0"
+					},
+					{
+						"key": "referer",
+						"value": "https://api.datausa.io/search/?q=&dimension=University"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/searchLegacy/?limit=-1&dimension=University&q=",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"searchLegacy",
+						""
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "-1"
+						},
+						{
+							"key": "dimension",
+							"value": "University"
+						},
+						{
+							"key": "q",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Degrees",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"The code is 200 ok and the response is no longer than 5 seconds.\", function () {\r",
+							"    pm.expect(pm.response.code, \"will be 200 ok\").to.equal(200);\r",
+							"    pm.expect(pm.response.responseTime, \"Response time below to 5 seg\").to.be.below(5000);\r",
+							"\r",
+							"    try {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.test(\"is a JSON format\", function() {\r",
+							"        pm.expect(jsonData).to.be.an('object');\r",
+							"    });\r",
+							"} catch (e) {\r",
+							"    \r",
+							"    pm.test(\"is a XML format\", function() {\r",
+							"        var responseBody = pm.response.text();\r",
+							"        pm.expect(responseBody).to.include(\"<?xml\");\r",
+							"    });\r",
+							"}\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"No 'null' values in any fields\", function() {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    jsonData.results.forEach((result, index) => {\r",
+							"        Object.keys(result).forEach((key) => {\r",
+							"            if (result[key] === null) {\r",
+							"                throw new Error(`Null found in field '${key}' in result at index ${index}`);\r",
+							"            }\r",
+							"        });\r",
+							"    });\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "authority",
+						"value": "api.datausa.io"
+					},
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "es-PA,es;q=0.9,en-PA;q=0.8,en;q=0.7,es-419;q=0.6"
+					},
+					{
+						"key": "cookie",
+						"value": "_ga=GA1.2.791936088.1710479639; _gid=GA1.2.1643345646.1710479639; _hjSessionUser_1257570=eyJpZCI6ImU1NjI1NzZjLWUxZTYtNTI5Mi05ZWFkLTg5Y2M0N2RmMjdmMyIsImNyZWF0ZWQiOjE3MTA0Nzk2Mzg3NjIsImV4aXN0aW5nIjp0cnVlfQ==; _hjSession_1257570=eyJpZCI6IjM4YWRmOWEyLWQ4YmQtNGEwNy1hOGY2LTljMjVhZWZlOTY4ZSIsImMiOjE3MTA1MjE3MjkzMjMsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=; _gat_tracker1=1; _ga_9X03EHGTVS=GS1.2.1710521729.2.1.1710521994.0.0.0"
+					},
+					{
+						"key": "referer",
+						"value": "https://api.datausa.io/search/?q=&dimension=CIP"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/searchLegacy/?limit=100&dimension=CIP&q=",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"searchLegacy",
+						""
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "100"
+						},
+						{
+							"key": "dimension",
+							"value": "CIP"
+						},
+						{
+							"key": "q",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Geography",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"\r",
+							"let jsonData;\r",
+							"pm.test(\"The code is 200 ok and the response is no longer than 5 seconds.\", function () {\r",
+							"    pm.expect(pm.response.code, \"will be 200 ok\").to.equal(200);\r",
+							"    pm.expect(pm.response.responseTime, \"Response time below to 5 seg\").to.be.below(5000);\r",
+							"});\r",
+							"\r",
+							"try {\r",
+							"    jsonData = pm.response.json();\r",
+							"    pm.test(\"is a JSON format\", function() {\r",
+							"        pm.expect(jsonData).to.be.an('object');\r",
+							"    });\r",
+							"} catch (e) {\r",
+							"    // If the response is not JSON, it could be XML, handle this case in a separate test\r",
+							"    pm.test(\"is a XML format\", function() {\r",
+							"        var responseBody = pm.response.text();\r",
+							"        pm.expect(responseBody).to.include(\"<?xml\");\r",
+							"    });\r",
+							"}\r",
+							"\r",
+							"pm.test(\"No 'null' values in any fields\", function() {\r",
+							"    if (jsonData && jsonData.results) {\r",
+							"        jsonData.results.forEach((result, index) => {\r",
+							"            Object.keys(result).forEach((key) => {\r",
+							"                if (result[key] === null) {\r",
+							"                    throw new Error(`Null found in field '${key}' in result at index ${index}`);\r",
+							"                }\r",
+							"            });\r",
+							"        });\r",
+							"    } else {\r",
+							"        pm.expect.fail(\"jsonData or jsonData.results is not defined\");\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Required fields are present and not empty\", function() {\r",
+							"    if (jsonData && jsonData.results) {\r",
+							"        jsonData.results.forEach((result, index) => {\r",
+							"            const requiredFields = ['alts', 'dimension', 'hierarchy', 'id', 'name', 'profile', 'slug'];\r",
+							"            requiredFields.forEach((field) => {\r",
+							"                pm.expect(result[field], `Field ${field} is missing or empty in result at index ${index}`).to.exist;\r",
+							"                pm.expect(result[field], `Field ${field} is empty in result at index ${index}`).to.not.be.empty;\r",
+							"            });\r",
+							"        });\r",
+							"    } else {\r",
+							"        pm.expect.fail(\"jsonData or jsonData.results is not defined\");\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Image object integrity\", function() {\r",
+							"    if (jsonData && jsonData.results) {\r",
+							"        jsonData.results.forEach((result, index) => {\r",
+							"            if (result.image !== false) {\r",
+							"                const requiredImageFields = ['id', 'url', 'author', 'license', 'createdAt', 'updatedAt'];\r",
+							"                requiredImageFields.forEach((field) => {\r",
+							"                    pm.expect(result.image[field], `Image field '${field}' is null in result at index ${index}`).to.not.be.null;\r",
+							"                });\r",
+							"            }\r",
+							"        });\r",
+							"    } else {\r",
+							"        pm.expect.fail(\"jsonData or jsonData.results is not defined\");\r",
+							"    }\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "authority",
+						"value": "api.datausa.io"
+					},
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "es-PA,es;q=0.9,en-PA;q=0.8,en;q=0.7,es-419;q=0.6"
+					},
+					{
+						"key": "cookie",
+						"value": "_ga=GA1.2.791936088.1710479639; _gid=GA1.2.1643345646.1710479639; _hjSessionUser_1257570=eyJpZCI6ImU1NjI1NzZjLWUxZTYtNTI5Mi05ZWFkLTg5Y2M0N2RmMjdmMyIsImNyZWF0ZWQiOjE3MTA0Nzk2Mzg3NjIsImV4aXN0aW5nIjp0cnVlfQ==; _hjSession_1257570=eyJpZCI6IjM4YWRmOWEyLWQ4YmQtNGEwNy1hOGY2LTljMjVhZWZlOTY4ZSIsImMiOjE3MTA1MjE3MjkzMjMsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=; _gat_tracker1=1; _ga_9X03EHGTVS=GS1.2.1710521729.2.1.1710522096.0.0.0"
+					},
+					{
+						"key": "referer",
+						"value": "https://api.datausa.io/search/?q=&dimension=Geography"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/searchLegacy/?limit=100&dimension=Geography&q=",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"searchLegacy",
+						""
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "100"
+						},
+						{
+							"key": "dimension",
+							"value": "Geography"
+						},
+						{
+							"key": "q",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Household",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"\r",
+							"let jsonData;\r",
+							"pm.test(\"The code is 200 ok and the response is no longer than 5 seconds.\", function () {\r",
+							"    pm.expect(pm.response.code, \"will be 200 ok\").to.equal(200);\r",
+							"    pm.expect(pm.response.responseTime, \"Response time below to 5 seg\").to.be.below(5000);\r",
+							"});\r",
+							"\r",
+							"try {\r",
+							"    jsonData = pm.response.json();\r",
+							"    pm.test(\"is a JSON format\", function() {\r",
+							"        pm.expect(jsonData).to.be.an('object');\r",
+							"    });\r",
+							"} catch (e) {\r",
+							"    \r",
+							"    pm.test(\"is a XML format\", function() {\r",
+							"        var responseBody = pm.response.text();\r",
+							"        pm.expect(responseBody).to.include(\"<?xml\");\r",
+							"    });\r",
+							"}\r",
+							"\r",
+							"pm.test(\"No 'null' values in any fields\", function() {\r",
+							"    if (jsonData && jsonData.results) {\r",
+							"        jsonData.results.forEach((result, index) => {\r",
+							"            Object.keys(result).forEach((key) => {\r",
+							"                if (result[key] === null) {\r",
+							"                    throw new Error(`Null found in field '${key}' in result at index ${index}`);\r",
+							"                }\r",
+							"            });\r",
+							"        });\r",
+							"    } else {\r",
+							"        pm.expect.fail(\"jsonData or jsonData.results is not defined\");\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"pm.test(\"integrity of object image\",\r",
+							"function(){\r",
+							"  pm.response.json().results.forEach((item,\r",
+							"  index)=>{\r",
+							"    if(item.image!==false){\r",
+							"      pm.expect(item.image.id,\r",
+							"      `missing'id'of'image'on index ${\r",
+							"        index\r",
+							"      }`).to.exist;pm.expect(item.image.url,\r",
+							"      `Falta'url'de'image'enelíndice${\r",
+							"        index\r",
+							"      }`).to.exist;\r",
+							"    }\r",
+							"  });\r",
+							"});\r",
+							"\r",
+							"pm.test(\" array 'alts' does not contain empty strings\",\r",
+							"function(){\r",
+							"  pm.response.json().results.forEach((item,\r",
+							"  index)=>{\r",
+							"    item.alts.forEach((alt,\r",
+							"    altIndex)=>{\r",
+							"      pm.expect(alt,\r",
+							"      `there are a empty string in'alts' index${\r",
+							"        index\r",
+							"      },\r",
+							"      posición${\r",
+							"        altIndex\r",
+							"      }`).to.not.eql('');\r",
+							"    });\r",
+							"  });\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""
+					},
+					{
+						"key": "Accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "Referer",
+						"value": "https://api.datausa.io/search/?q=house%20&dimension=NAPCS"
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/searchLegacy/?limit=100&dimension=NAPCS&q=house",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"searchLegacy",
+						""
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "100"
+						},
+						{
+							"key": "dimension",
+							"value": "NAPCS"
+						},
+						{
+							"key": "q",
+							"value": "house"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Industry",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let jsonData;\r",
+							"pm.test(\"The code is 200 ok and the response is no longer than 5 seconds.\", function () {\r",
+							"    pm.expect(pm.response.code, \"will be 200 ok\").to.equal(200);\r",
+							"    pm.expect(pm.response.responseTime, \"Response time below to 5 seg\").to.be.below(5000);\r",
+							"});\r",
+							"\r",
+							"try {\r",
+							"    jsonData = pm.response.json();\r",
+							"    pm.test(\"is a JSON format\", function() {\r",
+							"        pm.expect(jsonData).to.be.an('object');\r",
+							"    });\r",
+							"} catch (e) {\r",
+							"    \r",
+							"    pm.test(\"is a XML format\", function() {\r",
+							"        var responseBody = pm.response.text();\r",
+							"        pm.expect(responseBody).to.include(\"<?xml\");\r",
+							"    });\r",
+							"}\r",
+							"\r",
+							"pm.test(\"No 'null' values in any fields\", function() {\r",
+							"    if (jsonData && jsonData.results) {\r",
+							"        jsonData.results.forEach((result, index) => {\r",
+							"            Object.keys(result).forEach((key) => {\r",
+							"                if (result[key] === null) {\r",
+							"                    throw new Error(`Null found in field '${key}' in result at index ${index}`);\r",
+							"                }\r",
+							"            });\r",
+							"        });\r",
+							"    } else {\r",
+							"        pm.expect.fail(\"jsonData or jsonData.results is not defined\");\r",
+							"    }\r",
+							"});\r",
+							"pm.test(\"id not repeated\", function () {\r",
+							"    let ids = pm.response.json().results.map(result => result.id);\r",
+							"    let idsUnicos = [...new Set(ids)];\r",
+							"    pm.expect(ids.length, \"Unique ID in each index\").to.eql(idsUnicos.length);\r",
+							"});\r",
+							"pm.test(\"The 'score' are numeric and are not empty or null\", function () {\r",
+							"    pm.response.json().results.forEach((result, index) => {\r",
+							"        pm.expect(result.score, `The score in the index ${index} must be numeric`).to.be.a('number');\r",
+							"        pm.expect(result.score, `The score in the index ${index} must not be null`).to.not.be.null;\r",
+							"    });\r",
+							"});\r",
+							"\r",
+							"pm.test(\"The 'hierarchy' and 'zvalue' are of the correct type and are neither empty nor null\", function () {\r",
+							"    pm.response.json().results.forEach((result, index) => {\r",
+							"        // Verification for 'hierarchy'\r",
+							"        pm.expect(result.hierarchy, `Hierarchy at index ${index} should be a string`).to.be.a('string');\r",
+							"        pm.expect(result.hierarchy, `Hierarchy at index ${index} should not be empty`).to.not.be.empty;\r",
+							"\r",
+							"        // Verification for 'zvalue'\r",
+							"        pm.expect(result.zvalue, `Zvalue at index ${index} should be numeric`).to.be.a('number');\r",
+							"        pm.expect(result.zvalue, `Zvalue at index ${index} should not be null`).to.not.be.null;\r",
+							"    });\r",
+							"});\r",
+							"\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "authority",
+						"value": "api.datausa.io"
+					},
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "es-PA,es;q=0.9,en-PA;q=0.8,en;q=0.7,es-419;q=0.6"
+					},
+					{
+						"key": "cookie",
+						"value": "_ga=GA1.2.791936088.1710479639; _gid=GA1.2.1643345646.1710479639; _hjSessionUser_1257570=eyJpZCI6ImU1NjI1NzZjLWUxZTYtNTI5Mi05ZWFkLTg5Y2M0N2RmMjdmMyIsImNyZWF0ZWQiOjE3MTA0Nzk2Mzg3NjIsImV4aXN0aW5nIjp0cnVlfQ==; _hjSession_1257570=eyJpZCI6IjM4YWRmOWEyLWQ4YmQtNGEwNy1hOGY2LTljMjVhZWZlOTY4ZSIsImMiOjE3MTA1MjE3MjkzMjMsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=; _gat_tracker1=1; _ga_9X03EHGTVS=GS1.2.1710521729.2.1.1710523329.0.0.0"
+					},
+					{
+						"key": "referer",
+						"value": "https://api.datausa.io/search/?q=&dimension=PUMS%20Industry&hierarchy=Industry%20Group"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/searchLegacy/?limit=100&dimension=PUMS%20Industry&hierarchy=Industry%20Group&q=",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"searchLegacy",
+						""
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "100"
+						},
+						{
+							"key": "dimension",
+							"value": "PUMS%20Industry"
+						},
+						{
+							"key": "hierarchy",
+							"value": "Industry%20Group"
+						},
+						{
+							"key": "q",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Occupation",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let jsonData;\r",
+							"pm.test(\"The code is 200 ok and the response is no longer than 5 seconds.\", function () {\r",
+							"    pm.expect(pm.response.code, \"will be 200 ok\").to.equal(200);\r",
+							"    pm.expect(pm.response.responseTime, \"Response time below to 5 seg\").to.be.below(5000);\r",
+							"});\r",
+							"\r",
+							"try {\r",
+							"    jsonData = pm.response.json();\r",
+							"    pm.test(\"is a JSON format\", function() {\r",
+							"        pm.expect(jsonData).to.be.an('object');\r",
+							"    });\r",
+							"} catch (e) {\r",
+							"    \r",
+							"    pm.test(\"is a XML format\", function() {\r",
+							"        var responseBody = pm.response.text();\r",
+							"        pm.expect(responseBody).to.include(\"<?xml\");\r",
+							"    });\r",
+							"}\r",
+							"\r",
+							"pm.test(\"No 'null' values in any fields\", function() {\r",
+							"    if (jsonData && jsonData.results) {\r",
+							"        jsonData.results.forEach((result, index) => {\r",
+							"            Object.keys(result).forEach((key) => {\r",
+							"                if (result[key] === null) {\r",
+							"                    throw new Error(`Null found in field '${key}' in result at index ${index}`);\r",
+							"                }\r",
+							"            });\r",
+							"        });\r",
+							"    } else {\r",
+							"        pm.expect.fail(\"jsonData or jsonData.results is not defined\");\r",
+							"    }\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "authority",
+						"value": "api.datausa.io"
+					},
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "es-PA,es;q=0.9,en-PA;q=0.8,en;q=0.7,es-419;q=0.6"
+					},
+					{
+						"key": "cookie",
+						"value": "_ga=GA1.2.791936088.1710479639; _gid=GA1.2.1643345646.1710479639; _hjSessionUser_1257570=eyJpZCI6ImU1NjI1NzZjLWUxZTYtNTI5Mi05ZWFkLTg5Y2M0N2RmMjdmMyIsImNyZWF0ZWQiOjE3MTA0Nzk2Mzg3NjIsImV4aXN0aW5nIjp0cnVlfQ==; _hjSession_1257570=eyJpZCI6IjM4YWRmOWEyLWQ4YmQtNGEwNy1hOGY2LTljMjVhZWZlOTY4ZSIsImMiOjE3MTA1MjE3MjkzMjMsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=; _gat_tracker1=1; _ga_9X03EHGTVS=GS1.2.1710521729.2.1.1710523438.0.0.0"
+					},
+					{
+						"key": "referer",
+						"value": "https://api.datausa.io/search/?q=&dimension=PUMS%20Occupation&hierarchy=Detailed%20Occupation"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/searchLegacy/?limit=100&dimension=PUMS%20Occupation&hierarchy=Detailed%20Occupation&q=",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"searchLegacy",
+						""
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "100"
+						},
+						{
+							"key": "dimension",
+							"value": "PUMS%20Occupation"
+						},
+						{
+							"key": "hierarchy",
+							"value": "Detailed%20Occupation"
+						},
+						{
+							"key": "q",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Product and services by class",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let jsonData;\r",
+							"pm.test(\"The code is 200 ok and the response is no longer than 5 seconds.\", function () {\r",
+							"    pm.expect(pm.response.code, \"will be 200 ok\").to.equal(200);\r",
+							"    pm.expect(pm.response.responseTime, \"Response time below to 5 seg\").to.be.below(5000);\r",
+							"});\r",
+							"\r",
+							"try {\r",
+							"    jsonData = pm.response.json();\r",
+							"    pm.test(\"is a JSON format\", function() {\r",
+							"        pm.expect(jsonData).to.be.an('object');\r",
+							"    });\r",
+							"} catch (e) {\r",
+							"    \r",
+							"    pm.test(\"is a XML format\", function() {\r",
+							"        var responseBody = pm.response.text();\r",
+							"        pm.expect(responseBody).to.include(\"<?xml\");\r",
+							"    });\r",
+							"}\r",
+							"\r",
+							"pm.test(\"No 'null' values in any fields\", function() {\r",
+							"    if (jsonData && jsonData.results) {\r",
+							"        jsonData.results.forEach((result, index) => {\r",
+							"            Object.keys(result).forEach((key) => {\r",
+							"                if (result[key] === null) {\r",
+							"                    throw new Error(`Null found in field '${key}' in result at index ${index}`);\r",
+							"                }\r",
+							"            });\r",
+							"        });\r",
+							"    } else {\r",
+							"        pm.expect.fail(\"jsonData or jsonData.results is not defined\");\r",
+							"    }\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "authority",
+						"value": "api.datausa.io"
+					},
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "es-PA,es;q=0.9,en-PA;q=0.8,en;q=0.7,es-419;q=0.6"
+					},
+					{
+						"key": "cookie",
+						"value": "_ga=GA1.2.791936088.1710479639; _gid=GA1.2.1643345646.1710479639; _hjSessionUser_1257570=eyJpZCI6ImU1NjI1NzZjLWUxZTYtNTI5Mi05ZWFkLTg5Y2M0N2RmMjdmMyIsImNyZWF0ZWQiOjE3MTA0Nzk2Mzg3NjIsImV4aXN0aW5nIjp0cnVlfQ==; _hjSession_1257570=eyJpZCI6IjM4YWRmOWEyLWQ4YmQtNGEwNy1hOGY2LTljMjVhZWZlOTY4ZSIsImMiOjE3MTA1MjE3MjkzMjMsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=; _gat_tracker1=1; _ga_9X03EHGTVS=GS1.2.1710521729.2.1.1710523636.0.0.0"
+					},
+					{
+						"key": "referer",
+						"value": "https://api.datausa.io/search/?q=&dimension=NAPCS&hierarchy=NAPCS%20Class"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/searchLegacy/?limit=100&dimension=NAPCS&hierarchy=NAPCS%20Class&q=",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"searchLegacy",
+						""
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "100"
+						},
+						{
+							"key": "dimension",
+							"value": "NAPCS"
+						},
+						{
+							"key": "hierarchy",
+							"value": "NAPCS%20Class"
+						},
+						{
+							"key": "q",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Covid19 by  country",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let jsonData;\r",
+							"pm.test(\"The code is 200 ok and the response is no longer than 5 seconds.\", function () {\r",
+							"    pm.expect(pm.response.code, \"will be 200 ok\").to.equal(200);\r",
+							"    pm.expect(pm.response.responseTime, \"Response time below to 5 seg\").to.be.below(5000);\r",
+							"});\r",
+							"\r",
+							"try {\r",
+							"    jsonData = pm.response.json();\r",
+							"    pm.test(\"is a JSON format\", function() {\r",
+							"        pm.expect(jsonData).to.be.an('object');\r",
+							"    });\r",
+							"} catch (e) {\r",
+							"    \r",
+							"    pm.test(\"is a XML format\", function() {\r",
+							"        var responseBody = pm.response.text();\r",
+							"        pm.expect(responseBody).to.include(\"<?xml\");\r",
+							"    });\r",
+							"}\r",
+							"\r",
+							"pm.test(\"No 'null' values in any fields\", function() {\r",
+							"    if (jsonData && jsonData.results) {\r",
+							"        jsonData.results.forEach((result, index) => {\r",
+							"            Object.keys(result).forEach((key) => {\r",
+							"                if (result[key] === null) {\r",
+							"                    throw new Error(`Null found in field '${key}' in result at index ${index}`);\r",
+							"                }\r",
+							"            });\r",
+							"        });\r",
+							"    } else {\r",
+							"        pm.expect.fail(\"jsonData or jsonData.results is not defined\");\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"pm.test(\"'Geography' field equals 'ID Geography' in each index\", function () {\r",
+							"    const responseData = pm.response.json();\r",
+							"    responseData.forEach((item, index) => {\r",
+							"        pm.expect(item.Geography, `Geography must equal ID Geography in the index ${index}`).to.eql(item[\"ID Geography\"]);\r",
+							"    });\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "authority",
+						"value": "api.datausa.io"
+					},
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "es-PA,es;q=0.9,en-PA;q=0.8,en;q=0.7,es-419;q=0.6"
+					},
+					{
+						"key": "cookie",
+						"value": "_ga=GA1.2.791936088.1710479639; _gid=GA1.2.1643345646.1710479639; _hjSessionUser_1257570=eyJpZCI6ImU1NjI1NzZjLWUxZTYtNTI5Mi05ZWFkLTg5Y2M0N2RmMjdmMyIsImNyZWF0ZWQiOjE3MTA0Nzk2Mzg3NjIsImV4aXN0aW5nIjp0cnVlfQ==; _hjSession_1257570=eyJpZCI6IjM4YWRmOWEyLWQ4YmQtNGEwNy1hOGY2LTljMjVhZWZlOTY4ZSIsImMiOjE3MTA1MjE3MjkzMjMsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=; _gat_tracker1=1; _ga_9X03EHGTVS=GS1.2.1710521729.2.1.1710523931.0.0.0"
+					},
+					{
+						"key": "referer",
+						"value": "https://api.datausa.io/coronavirus"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/covid19/country",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"covid19",
+						"country"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
