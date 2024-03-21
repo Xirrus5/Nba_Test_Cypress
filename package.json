@@ -1,0 +1,17 @@
+{
+  "name": "test_qa_cypress",
+  "version": "1.0.0",
+  "description": "Test to qa engineer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Christopher Rodriguez",
+  "license": "ISC",
+  "dependencies": {
+    "cypress": "^13.7.0"
+  },
+  "devDependencies": {
+    "@cypress-audit/lighthouse": "^1.4.2"
+  }
+}
